@@ -1,0 +1,13 @@
+.chatbot-container {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    height: 100vh; /* Take full viewport height */
+    width: 100vw; /* Take full viewport width */
+    background-color: #f0f0f0; /* Example background color */
+}
+
+iframe {
+    border: none;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Example styling for the iframe */
+}
