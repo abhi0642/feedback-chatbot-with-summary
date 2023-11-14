@@ -1,23 +1,78 @@
 import json
+import boto3
+from datetime import datetime
+s3_client = boto3.client('s3')
+print('Loading function')
+formatted_output = ""
+from langchain.memory import ConversationBufferMemory
+from langchain.chains import ConversationalRetrievalChain
+from langchain.llms import OpenAI
+from langchain import PromptTemplate, FewShotPromptTemplate
+openai_api_key="sk-"
 
-# Sample JSON data (replace this with your actual JSON string)
-json_data = {'resource': '/bot-handler', 'path': '/bot-handler', 'httpMethod': 'POST', 'headers': {'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate, br', 'Authorization': 'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4MzNlOGE3ZmUzZmU0Yjg3ODk0ODIxOWExNjg0YWZhMzczY2E4NmYiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwczovL3B0b242emZ5eWIuZXhlY3V0ZS1hcGkudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vZGVmYXVsdC9ib3QtaGFuZGxlciIsImF6cCI6IjExMTI3MTk4MDUzNjY3MDgwNzgxNiIsImVtYWlsIjoic2VydmljZS0xMDk1NDY4ODM4NTg5QGdjcC1zYS1kaWFsb2dmbG93LmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV4cCI6MTY5OTk4OTk4MiwiaWF0IjoxNjk5OTg2MzgyLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJzdWIiOiIxMTEyNzE5ODA1MzY2NzA4MDc4MTYifQ.CUReD4HOjePwMBAtkITJhe9eaTn5MD5EmtPNNghwoP1aqC6H9Sc9MzsuPt7un9t6CelnG6KfO8DhCjCk0JWOqWiahUzkYjFee6la4QyWjSYqf-l4VanmHSh3aR7YmdupbE3vpWPsbv-DkbeDrJPNWVEWThPzBQguxxCM0RUt6k2McgG1S9_1gyn4MPweKGXcuj9Rtw98HkFpA06hccmfSv__k0fe483WdOno1KSgRQPp8kAcs9Q9qAakWNj5BIEpv7DcFfU9AA2Zd2jtTG6iIEJL2RW2eF0B_lHY4Q6CuQm_lx8JTMYQC8XBQ2qj1YqRTEKO89LoGNLMHj8U9Sk_Ng', 'content-type': 'application/json', 'Host': 'pton6zfyyb.execute-api.us-east-1.amazonaws.com', 'User-Agent': 'Google-Dialogflow', 'X-Amzn-Trace-Id': 'Root=1-6553bbce-2d39b80a537bd00936084959', 'X-Forwarded-For': '74.125.212.2', 'X-Forwarded-Port': '443', 'X-Forwarded-Proto': 'https'}, 'multiValueHeaders': {'Accept': ['*/*'], 'Accept-Encoding': ['gzip, deflate, br'], 'Authorization': ['Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6ImY4MzNlOGE3ZmUzZmU0Yjg3ODk0ODIxOWExNjg0YWZhMzczY2E4NmYiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJodHRwczovL3B0b242emZ5eWIuZXhlY3V0ZS1hcGkudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vZGVmYXVsdC9ib3QtaGFuZGxlciIsImF6cCI6IjExMTI3MTk4MDUzNjY3MDgwNzgxNiIsImVtYWlsIjoic2VydmljZS0xMDk1NDY4ODM4NTg5QGdjcC1zYS1kaWFsb2dmbG93LmlhbS5nc2VydmljZWFjY291bnQuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV4cCI6MTY5OTk4OTk4MiwiaWF0IjoxNjk5OTg2MzgyLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJzdWIiOiIxMTEyNzE5ODA1MzY2NzA4MDc4MTYifQ.CUReD4HOjePwMBAtkITJhe9eaTn5MD5EmtPNNghwoP1aqC6H9Sc9MzsuPt7un9t6CelnG6KfO8DhCjCk0JWOqWiahUzkYjFee6la4QyWjSYqf-l4VanmHSh3aR7YmdupbE3vpWPsbv-DkbeDrJPNWVEWThPzBQguxxCM0RUt6k2McgG1S9_1gyn4MPweKGXcuj9Rtw98HkFpA06hccmfSv__k0fe483WdOno1KSgRQPp8kAcs9Q9qAakWNj5BIEpv7DcFfU9AA2Zd2jtTG6iIEJL2RW2eF0B_lHY4Q6CuQm_lx8JTMYQC8XBQ2qj1YqRTEKO89LoGNLMHj8U9Sk_Ng'], 'content-type': ['application/json'], 'Host': ['pton6zfyyb.execute-api.us-east-1.amazonaws.com'], 'User-Agent': ['Google-Dialogflow'], 'X-Amzn-Trace-Id': ['Root=1-6553bbce-2d39b80a537bd00936084959'], 'X-Forwarded-For': ['74.125.212.2'], 'X-Forwarded-Port': ['443'], 'X-Forwarded-Proto': ['https']}, 'queryStringParameters': None, 'multiValueQueryStringParameters': None, 'pathParameters': None, 'stageVariables': None, 'requestContext': {'resourceId': 'nqcjly', 'resourcePath': '/bot-handler', 'httpMethod': 'POST', 'extendedRequestId': 'OZpIWGQmoAMEdYQ=', 'requestTime': '14/Nov/2023:18:26:22 +0000', 'path': '/default/bot-handler', 'accountId': '275535220961', 'protocol': 'HTTP/1.1', 'stage': 'default', 'domainPrefix': 'pton6zfyyb', 'requestTimeEpoch': 1699986382769, 'requestId': '16950715-134e-4af3-a553-259693ebfc86', 'identity': {'cognitoIdentityPoolId': None, 'accountId': None, 'cognitoIdentityId': None, 'caller': None, 'sourceIp': '74.125.212.2', 'principalOrgId': None, 'accessKey': None, 'cognitoAuthenticationType': None, 'cognitoAuthenticationProvider': None, 'userArn': None, 'userAgent': 'Google-Dialogflow', 'user': None}, 'domainName': 'pton6zfyyb.execute-api.us-east-1.amazonaws.com', 'apiId': 'pton6zfyyb'}, 'body': '{\n  "responseId": "c6481c75-1745-41a8-bc59-394021a28ec4-1838fa0d",\n  "queryResult": {\n    "queryText": "start",\n    "parameters": {\n    },\n    "allRequiredParamsPresent": true,\n    "fulfillmentText": "How satisfied are you with the service you received?",\n    "fulfillmentMessages": [{\n      "text": {\n        "text": ["How satisfied are you with the service you received?"]\n      }\n    }],\n    "outputContexts": [{\n      "name": "projects/feedback-bot-vpr9/agent/sessions/webdemo-29b142a2-8514-281e-afd3-13d246571bc5/contexts/q2",\n      "lifespanCount": 5\n    }, {\n      "name": "projects/feedback-bot-vpr9/agent/sessions/webdemo-29b142a2-8514-281e-afd3-13d246571bc5/contexts/q1-followup",\n      "lifespanCount": 2\n    }, {\n      "name": "projects/feedback-bot-vpr9/agent/sessions/webdemo-29b142a2-8514-281e-afd3-13d246571bc5/contexts/__system_counters__",\n      "parameters": {\n        "no-input": 0.0,\n        "no-match": 0.0\n      }\n    }],\n    "intent": {\n      "name": "projects/feedback-bot-vpr9/agent/intents/b9385f3a-b5de-4058-b506-48d73d1574d4",\n      "displayName": "q1"\n    },\n    "intentDetectionConfidence": 1.0,\n    "languageCode": "en"\n  },\n  "originalDetectIntentRequest": {\n    "payload": {\n    }\n  },\n  "session": "projects/feedback-bot-vpr9/agent/sessions/webdemo-29b142a2-8514-281e-afd3-13d246571bc5",\n  "alternativeQueryResults": [{\n    "queryText": "start",\n    "allRequiredParamsPresent": true,\n    "intent": {\n      "name": "projects/feedback-bot-vpr9/agent/intents/b490ad44-fece-4ddc-8370-0b2328c309e8",\n      "displayName": "Knowledge.KnowledgeBase.ODg4MjgxNzU1MTYwNDY0NTg4OA"\n    },\n    "intentDetectionConfidence": 0.48646298,\n    "languageCode": "en",\n    "knowledgeAnswers": {\n      "answers": [{\n        "source": "projects/feedback-bot-vpr9/knowledgeBases/ODg4MjgxNzU1MTYwNDY0NTg4OA/documents/ODAyNzIxMTIwNjY5MzQ4NjU5Mg",\n        "faqQuestion": "questions",\n        "answer": "answers",\n        "matchConfidenceLevel": "LOW",\n        "matchConfidence": 0.48646298\n      }]\n    }\n  }]\n}', 'isBase64Encoded': False}
 
-data = json_data
-body = json.loads(data['body'])
+def lambda_handler(event, context):
+    global formatted_output  # Declare to modify the global variable
 
-# Assuming the conversation is in 'outputContexts'
-conversation = []
-for context in body.get("queryResult", {}).get("outputContexts", []):
-    # Extracting context name which might contain question and answer info
-    context_name = context.get("name", "")
-    if 'followup' in context_name:
-        # Extracting the question number from the context name
-        question_number = ''.join(filter(str.isdigit, context_name))
-        question = f"question {question_number} - {context.get('parameters', {}).get('previous_question', 'Unknown')}"
-        answer = f"answer {question_number} - {context.get('parameters', {}).get('previous_answer', 'Unknown')}"
-        conversation.append((question, answer))
+    print("Received event:", event)
+    print("Context:", context)
+    body = json.loads(event['body'])
+    
+    end_of_conversation = False
 
-# Format the conversation for display
-formatted_conversation = "\n".join([f"{q}\n{a}" for q, a in conversation])
-print(formatted_conversation)
+    # Extracting question and answer
+    question = body.get("queryResult", {}).get("queryText", "")
+    answer = body.get("queryResult", {}).get("fulfillmentText", "")
+    if question and answer:
+        formatted_output += f"-----------------------\n"
+        formatted_output += f"Question: \"{question}\"\n"
+        formatted_output += f"Answer: \"{answer}\"\n"
+        formatted_output += f"-----------------------\n"
+
+    if "end of conversation" in answer:
+        end_of_conversation = True
+
+    if end_of_conversation:
+        print("heyyyyyy",formatted_output)
+        summary_of_conversation(formatted_output)
+    else:
+        print(formatted_output)
+
+
+def summary_of_conversation(conversation_text):
+    global formatted_output  # Declare to modify the global variable
+    llm = OpenAI(
+            model_name="gpt-4",
+            temperature=0.5,
+            max_retries=3,
+            max_tokens=500,
+            openai_api_key=openai_api_key,
+            streaming=True,
+        )
+
+    prompt = """
+                Given a set of customer feedback in a question-and-answer format, your task is to create a comprehensive summary of approximately 400 words.
+                This summary should encapsulate the key points, concerns, praises, and overall sentiment expressed in the feedback. 
+                Additionally, apply advanced sentiment analysis methods to assign a score to the overall feedback. 
+                This score should reflect the general tone and sentiment of the customer responses, whether positive, negative, or neutral. 
+                Consider the nuances in the language used, the intensity of the emotions expressed, and any specific aspects of the product or service that are repeatedly mentioned. 
+                Your analysis should provide a clear, concise, and accurate representation of the customer's experience and satisfaction level.
+                """
+
+    chain = ConversationalRetrievalChain.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            return_source_documents=True,
+            chain_type_kwargs=prompt
+        )
+    chain_response = chain(conversation_text)
+    response = chain_response["answer"].strip()
+    formatted_output = ""  # Clear the global variable
+    store_summary_in_s3(response)
+    return response
+
+
+def store_summary_in_s3(summary):
+    bucket_name = "summary-feedback"
+    file_name = f"conversation-summary-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.txt"
+    s3_client.put_object(Bucket=bucket_name, Key=file_name, Body=summary)
