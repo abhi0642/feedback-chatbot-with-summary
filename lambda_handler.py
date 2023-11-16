@@ -8,11 +8,20 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 from langchain.llms import OpenAI
 from langchain import PromptTemplate, FewShotPromptTemplate
-openai_api_key="sk-"
-
 
 def lambda_handler(event, context):
-    global formatted_output  # Declare to modify the global variable
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('YourTableName')  # Replace with your DynamoDB table name
+
+    conversation_id = "unique_conversation_id"  # Replace with a method to uniquely identify each conversation
+
+    # Try to retrieve the existing conversation data
+    try:
+        response = table.get_item(Key={'id': conversation_id})
+        formatted_output = response['Item']['formatted_output']
+    except Exception as e:
+        print(e.response['Error']['Message'])
+        formatted_output = []  # Initialize as empty if not found
 
     print("Received event:", event)
     print("Context:", context)
@@ -24,30 +33,35 @@ def lambda_handler(event, context):
     question = body.get("queryResult", {}).get("queryText", "")
     answer = body.get("queryResult", {}).get("fulfillmentText", "")
     if question and answer:
-        formatted_output += f"-----------------------\n"
-        formatted_output += f"Question: \"{question}\"\n"
-        formatted_output += f"Answer: \"{answer}\"\n"
-        formatted_output += f"-----------------------\n"
+        formatted_output.append({
+            'question': question,
+            'answer': answer
+        })
 
     if "end of conversation" in answer:
         end_of_conversation = True
 
     if end_of_conversation:
-        print("heyyyyyy",formatted_output)
-        summary_of_conversation(formatted_output)
+        #summary = generate_summary(formatted_output)
+        print("Summary of Conversation:", summary)
+        # Clear the formatted_output from DynamoDB
+        table.put_item(Item={'id': conversation_id, 'formatted_output': []})
     else:
-        print(formatted_output)
+        # Update the DynamoDB table with new data
+        table.put_item(Item={'id': conversation_id, 'formatted_output': formatted_output})
+        print("Current Q&A:", formatted_output)
 
 
 def summary_of_conversation(conversation_text):
     global formatted_output  # Declare to modify the global variable
     llm = OpenAI(
-            model_name="gpt-4",
-            temperature=0.5,
-            max_retries=3,
-            max_tokens=500,
-            openai_api_key=openai_api_key,
+            model_name=MODEL,
+            temperature=TEMPERATURE,
+            max_retries=MAX_RETRIES,
+            max_tokens=TOKENS,
+            openai_api_key=openai.api_key,
             streaming=True,
+            callbacks=[StreamHandler()]
         )
 
     prompt = """
@@ -65,8 +79,11 @@ def summary_of_conversation(conversation_text):
             return_source_documents=True,
             chain_type_kwargs=prompt
         )
-    chain_response = chain(conversation_text)
-    response = chain_response["answer"].strip()
+        chain_response = chain(user_input)
+        debug_attribute("COMPLETE RESPONSE", chain_response)
+        response = chain_response["answer"].strip()
+
+
     formatted_output = ""  # Clear the global variable
     store_summary_in_s3(response)
     return response
